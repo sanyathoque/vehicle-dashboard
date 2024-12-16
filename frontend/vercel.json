@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "src": "/(.*)", "dest": ".public/index.html" }
+    { "source": "/(.*)", "dest": ".public/index.html" }
   ]
 }
