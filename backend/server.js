@@ -26,7 +26,11 @@ app.use(cors({
 }));
 
 // WebSocket server
-const wss = new WebSocket.Server({ port: process.env.WS_PORT || 8080 });
+const server = app.listen(process.env.PORT || 5000, () => {
+  console.log(`Server running on port ${process.env.PORT || 5000}`);
+});
+
+const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws) => {
   console.log('Client connected');
@@ -92,8 +96,10 @@ setInterval(async () => {
   }
 }, 5000);
 
+const API_URL = process.env.API_URL || 'http://localhost:5000';
+
 // API endpoints
-app.post('/api/data', (req, res) => {
+app.post(`${API_URL}/api/data`, (req, res) => {
   const data = req.body;
   console.log('Received data:', JSON.stringify(data, null, 2));
   // Process the data as needed
@@ -103,18 +109,26 @@ app.post('/api/data', (req, res) => {
 });
 
 // Route to receive updatedStatus from App.js
-app.post('/api/update-status', (req, res) => {
+app.post(`${API_URL}/api/update-status`, (req, res) => {
   const updatedStatus = req.body;
   console.log('Received updatedStatus:', updatedStatus);
   // Process the updatedStatus as needed
   res.status(200).json({ message: 'Status updated successfully' });
 });
 
-app.get('/api/status', (req, res) => {
+app.get(`${API_URL}/api/status`, (req, res) => {
   res.json({ status: 'Vehicle Dashboard API is running!' });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Graceful Shutdown
+process.on('SIGTERM', () => {
+  console.info('SIGTERM signal received. Closing HTTP server.');
+  server.close(() => {
+    console.log('HTTP server closed.');
+    mongoose.connection.close(false, () => {
+      console.log('MongoDb connection closed.');
+    });
+  });
+});
 
 module.exports = app;
